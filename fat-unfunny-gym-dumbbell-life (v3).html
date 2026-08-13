@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="th" class="scroll-smooth dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAT UNFUNNY GYM - Admin & Member Management System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        gymBlue: '#1651C7',
+                        gymLightBlue: '#3B82F6',
+                        gymDark: '#08080C',
+                        gymGray: '#12121A',
+                        gymCard: '#1A1A26',
+                        gymCardHover: '#232334',
+                        gymBorder: '#2E2E42',
+                        gymAccent: '#00E5FF'
+                    },
+                    boxShadow: {
+                        'neon-blue': '0 0 15px rgba(22, 81, 199, 0.4)',
+                        'neon-glow': '0 0 25px rgba(22, 81, 199, 0.6)',
+                        'neon-cyan': '0 0 15px rgba(0, 229, 255, 0.4)',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts: Prompt & Montserrat -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for Admin Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- QRCodeJS for Member Passes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Prompt', 'Montserrat', sans-serif;
+            background-color: #08080C;
+            color: #FFFFFF;
+        }
+        .text-neon {
+            text-shadow: 0 0 10px rgba(22, 81, 199, 0.6);
+        }
+        .text-neon-cyan {
+            text-shadow: 0 0 10px rgba(0, 229, 255, 0.6);
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #08080C;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1651C7;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #0d358c;
+        }
+        .glass-panel {
+            background: rgba(26, 26, 38, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .active-tab {
+            background-color: rgba(22, 81, 199, 0.25);
+            border-left: 4px solid #1651C7;
+            color: #3B82F6 !important;
+        }
+        /* Custom Checkbox/Radio */
+        input[type="checkbox"]:checked {
+            background-color: #1651C7;
+        }
+    </style>
+</head>
+<body class="bg-gymDark text-gray-100 min-h-screen flex flex-col antialiased selection:bg-gymBlue selection:text-white overflow-x-hidden">
+
+    <!-- TOP GLOBAL NAVBAR -->
+    <header class="bg-gymGray/90 backdrop-blur-md border-b border-gymBorder sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Brand Logo -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchView('public')">
+                <div class="w-10 h-10 rounded-full border-2 border-gymBlue bg-gymCard flex items-center justify-center text-gymBlue font-black text-xl shadow-neon-blue">
+                    <i class="fa-solid fa-dumbbell"></i>
+                </div>
+                <div>
+                    <span class="font-black tracking-wider text-lg text-white">FAT UNFUNNY <span class="text-gymBlue">GYM</span></span>
+                    <span class="hidden sm:inline-block text-xs text-gray-400 block -mt-1 font-sans">DUMBBELL LIFE SYSTEM</span>
+                </div>
+            </div>
+
+            <!-- View Switcher & Actions -->
+            <div class="flex items-center space-x-3">
+                <!-- Status Badge -->
+                <span id="system-status-badge" class="hidden md:inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping mr-1.5"></span> System Online
+                </span>
+
+                <!-- Quick Check-In Trigger -->
+                <button onclick="openCheckInModal()" class="bg-gymCard hover:bg-gymCardHover border border-gymBlue/40 text-gymAccent hover:text-white px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-qrcode text-gymBlue"></i>
+                    <span>คีออสเช็คอิน</span>
+                </button>
+
+                <!-- Mode Toggle (Public Page vs Admin Panel) -->
+                <div class="bg-gymDark p-1 rounded-xl border border-gymBorder flex items-center">
+                    <button id="btn-view-public" onclick="switchView('public')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-gymBlue text-white shadow-neon-blue">
+                        <i class="fa-solid fa-house mr-1"></i> หน้าเว็บ
+                    </button>
+                    <button id="btn-view-admin" onclick="switchView('admin')" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition">
+                        <i class="fa-solid fa-user-shield mr-1"></i> หลังบ้านแอดมิน
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- SECTION 1: PUBLIC LANDING & MEMBER PORTAL VIEW -->
+    <main id="public-view" class="flex-1 flex flex-col">
+        <!-- Hero Section -->
+        <section class="relative bg-gradient-to-b from-gymGray via-gymDark to-gymDark py-16 md:py-24 border-b border-gymBorder overflow-hidden">
+            <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#1651C7_1px,transparent_1px)] [background-size:16px_16px]"></div>
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                    <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
+                        <span class="inline-block px-3 py-1 rounded-full bg-gymBlue/20 text-gymAccent border border-gymBlue/30 text-xs font-semibold uppercase tracking-widest">
+                            🔥 ยิมสายฮาร์ดคอร์ อุปกรณ์ครบครัน 24 ชม.
+                        </span>
+                        <h1 class="text-4xl sm:text-6xl font-black text-white leading-tight">
+                            NO PAIN, NO GAIN <br>
+                            <span class="text-transparent bg-clip-text bg-gradient-to-r from-gymBlue via-blue-400 to-cyan-400">DUMBBELL LIFE GYM</span>
+                        </h1>
+                        <p class="text-gray-400 text-base sm:text-lg max-w-2xl mx-auto lg:mx-0">
+                            ยินดีต้อนรับสู่ Fat Unfunny Gym ยิมสำหรับผู้ที่จริงจังกับการออกกำลังกาย อุปกรณ์เกรดพรีเมียม โค้ชมืออาชีพ และสังคมสายยกเหล็กที่พร้อมซัพพอร์ตคุณ
+                        </p>
+                        <div class="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-2">
+                            <button onclick="scrollToPricing()" class="px-6 py-3 rounded-xl bg-gymBlue hover:bg-blue-700 text-white font-bold shadow-neon-glow transition transform hover:-translate-y-0.5">
+                                สมัครสมาชิกวันนี้
+                            </button>
+                            <button onclick="openMemberSearchModal()" class="px-6 py-3 rounded-xl bg-gymCard hover:bg-gymCardHover border border-gymBorder text-white font-semibold transition flex items-center space-x-2">
+                                <i class="fa-solid fa-id-card text-gymBlue"></i>
+                                <span>ตรวจสอบสถานะสมาชิก / QR Card</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Quick Gym Stats Display -->
+                    <div class="lg:col-span-5">
+                        <div class="glass-panel p-6 rounded-2xl border border-gymBlue/30 shadow-neon-blue relative">
+                            <div class="flex items-center justify-between border-b border-gymBorder pb-4 mb-4">
+                                <h3 class="font-bold text-white flex items-center">
+                                    <i class="fa-solid fa-chart-line text-gymBlue mr-2"></i> สถิติยิมวันนี้
+                                </h3>
+                                <span class="text-xs text-gray-400" id="live-time-clock">--:--:--</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="bg-gymDark/60 p-4 rounded-xl border border-gymBorder">
+                                    <p class="text-xs text-gray-400">สมาชิกในยิมตอนนี้</p>
+                                    <p class="text-3xl font-black text-gymAccent mt-1" id="public-stat-active-now">14</p>
+                                    <span class="text-[10px] text-emerald-400"><i class="fa-solid fa-arrow-trend-up"></i> หนาแน่นปานกลาง</span>
+                                </div>
+                                <div class="bg-gymDark/60 p-4 rounded-xl border border-gymBorder">
+                                    <p class="text-xs text-gray-400">คลาสวันนี้</p>
+                                    <p class="text-3xl font-black text-white mt-1" id="public-stat-classes">4</p>
+                                    <span class="text-[10px] text-gray-400">เปิดรับจองแล้ว</span>
+                                </div>
+                                <div class="bg-gymDark/60 p-4 rounded-xl border border-gymBorder">
+                                    <p class="text-xs text-gray-400">เทรนเนอร์สแตนด์บาย</p>
+                                    <p class="text-3xl font-black text-gymBlue mt-1" id="public-stat-trainers">6</p>
+                                    <span class="text-[10px] text-gray-400">พร้อมให้คำแนะนำ</span>
+                                </div>
+                                <div class="bg-gymDark/60 p-4 rounded-xl border border-gymBorder">
+                                    <p class="text-xs text-gray-400">ตู้ล็อกเกอร์ว่าง</p>
+                                    <p class="text-3xl font-black text-emerald-400 mt-1" id="public-stat-lockers">18</p>
+                                    <span class="text-[10px] text-gray-400">จากทั้งหมด 30 ตู้</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pricing Packages Section -->
+        <section id="pricing-section" class="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl sm:text-4xl font-black text-white">แพ็กเกจสมาชิก <span class="text-gymBlue">MEMBERSHIP</span></h2>
+                <p class="text-gray-400 text-sm mt-2">เลือกแพ็กเกจที่เหมาะกับเป้าหมายการออกกำลังกายของคุณ</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8" id="public-packages-grid">
+                <!-- Package Cards rendered via JS -->
+            </div>
+        </section>
+
+        <!-- Today's Schedule & Trainers -->
+        <section class="py-12 bg-gymGray/50 border-t border-gymBorder">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Class Timetable -->
+                    <div class="glass-panel p-6 rounded-2xl">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-bold text-white flex items-center">
+                                <i class="fa-solid fa-calendar-days text-gymBlue mr-2"></i> ตารางคลาสประจำวัน
+                            </h3>
+                            <span class="text-xs bg-gymBlue/20 text-gymBlue px-2.5 py-1 rounded-md border border-gymBlue/30">วันนี้</span>
+                        </div>
+                        <div class="space-y-3" id="public-classes-list">
+                            <!-- Classes rendered via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Trainers Roster -->
+                    <div class="glass-panel p-6 rounded-2xl">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-bold text-white flex items-center">
+                                <i class="fa-solid fa-user-ninja text-gymAccent mr-2"></i> ทีมงานเทรนเนอร์
+                            </h3>
+                            <span class="text-xs text-gray-400">Certified Trainers</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="public-trainers-list">
+                            <!-- Trainers rendered via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- SECTION 2: ADMIN MANAGEMENT DASHBOARD VIEW -->
+    <div id="admin-view" class="hidden flex-1 flex flex-col md:flex-row min-h-[calc(100vh-4rem)]">
+        <!-- ADMIN SIDEBAR -->
+        <aside class="w-full md:w-64 bg-gymGray border-r border-gymBorder flex flex-col shrink-0">
+            <!-- Admin Profile Banner -->
+            <div class="p-4 border-b border-gymBorder bg-gymDark/40 flex items-center space-x-3">
+                <div class="w-12 h-12 rounded-full border-2 border-gymBlue overflow-hidden shadow-neon-blue shrink-0">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80" alt="Admin Avatar" class="w-full h-full object-cover">
+                </div>
+                <div class="overflow-hidden">
+                    <h4 class="font-bold text-sm text-white truncate">ผู้ดูแลระบบยิม</h4>
+                    <p class="text-xs text-gymBlue font-mono">STAFF #001 (Admin)</p>
+                </div>
+            </div>
+
+            <!-- Admin Navigation Tabs -->
+            <nav class="flex-1 p-3 space-y-1 font-medium text-sm">
+                <button onclick="switchAdminTab('dashboard')" id="tab-btn-dashboard" class="w-full text-left px-3.5 py-2.5 rounded-lg flex items-center space-x-3 text-gray-300 hover:bg-gymCard transition active-tab">
+                    <i class="fa-solid fa-chart-pie w-5 text-gymBlue"></i>
+                    <span>แผงควบคุม (Dashboard)</span>
+                </button>
+                <button onclick="switchAdminTab('members')" id="tab-btn-members" class="w-full text-left px-3.5 py-2.5 rounded-lg flex items-center space-x-3 text-gray-300 hover:bg-gymCard transition">
+                    <i class="fa-solid fa-users w-5 text-gymBlue"></i>
+                    <span>จัดการสมาชิก (Members)</span>
+                </button>
+                <button onclick="switchAdminTab('pos')" id="tab-btn-pos" class="w-full text-left px-3.5 py-2.5 rounded-lg flex items-center space-x-3 text-gray-300 hover:bg-gymCard transition">
+                    <i class="fa-solid fa-cash-register w-5 text-gymBlue"></i>
+                    <span>หน้าร้าน/ขายอาหารเสริม (POS)</span>
+                </button>
+                <button onclick="switchAdminTab('packages')" id="tab-btn-packages" class="w-full text-left px-3.5 py-2.5 rounded-lg flex items-center space-x-3 text-gray-300 hover:bg-gymCard transition">
+                    <i class="fa-solid fa-tags w-5 text-gymBlue"></i>
+                    <span>แพ็กเกจ (Packages)</span>
+                </button>
+                <button onclick="switchAdminTab('classes')" id="tab-btn-classes" class="w-full text-left px-3.5 py-2.5 rounded-lg flex items-center space-x-3 text-gray-300 hover:bg-gymCard transition">
+                    <i class="fa-solid fa-dumbbell w-5 text-gymBlue"></i>
+                    <span>จัดตารางคลาส (Classes)</span>
+                </button>
+                <button onclick="switchAdminTab('lockers')" id="tab-btn-lockers" class="w-full text-left px-3.5 py-2.5 rounded-lg flex items-center space-x-3 text-gray-300 hover:bg-gymCard transition">
+                    <i class="fa-solid fa-key w-5 text-gymBlue"></i>
+                    <span>ผังล็อกเกอร์ (Lockers)</span>
+                </button>
+            </nav>
+
+            <div class="p-3 border-t border-gymBorder text-xs text-gray-500 text-center">
+                FAT UNFUNNY GYM v2.4 (2026)
+            </div>
+        </aside>
+
+        <!-- ADMIN MAIN CONTENT AREA -->
+        <main class="flex-1 p-4 sm:p-6 lg:p-8 bg-gymDark overflow-y-auto">
+
+            <!-- ADMIN TAB 1: DASHBOARD OVERVIEW -->
+            <div id="admin-tab-dashboard" class="space-y-6">
+                <!-- Page Title Header -->
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gymBorder pb-4">
+                    <div>
+                        <h2 class="text-2xl font-black text-white">ภาพรวมระบบแอดมิน</h2>
+                        <p class="text-gray-400 text-xs sm:text-sm">สรุปยอดขาย สมาชิกเข้าใช้บริการ และสถานะระบบประจำวัน</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="openAddMemberModal()" class="bg-gymBlue hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-neon-blue transition flex items-center space-x-1.5">
+                            <i class="fa-solid fa-user-plus"></i>
+                            <span>เพิ่มสมาชิกใหม่</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- KPI Cards Row -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-gymCard p-5 rounded-2xl border border-gymBorder shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-gray-400">สมาชิกทั้งหมด</span>
+                            <div class="w-8 h-8 rounded-lg bg-gymBlue/20 text-gymBlue flex items-center justify-center">
+                                <i class="fa-solid fa-users"></i>
+                            </div>
+                        </div>
+                        <p class="text-2xl font-black text-white mt-2" id="admin-kpi-total-members">0</p>
+                        <p class="text-[11px] text-emerald-400 mt-1"><i class="fa-solid fa-circle-check"></i> <span id="admin-kpi-active-members">0</span> Active อยู่ในระบบ</p>
+                    </div>
+
+                    <div class="bg-gymCard p-5 rounded-2xl border border-gymBorder shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-gray-400">ยอดขายเดือนนี้</span>
+                            <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                                <i class="fa-solid fa-baht-sign"></i>
+                            </div>
+                        </div>
+                        <p class="text-2xl font-black text-white mt-2" id="admin-kpi-revenue">฿0</p>
+                        <p class="text-[11px] text-gray-400 mt-1"><i class="fa-solid fa-arrow-trend-up text-emerald-400"></i> จากสมาชิก & POS สินค้า</p>
+                    </div>
+
+                    <div class="bg-gymCard p-5 rounded-2xl border border-gymBorder shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-gray-400">การเช็คอินวันนี้</span>
+                            <div class="w-8 h-8 rounded-lg bg-cyan-500/20 text-gymAccent flex items-center justify-center">
+                                <i class="fa-solid fa-qrcode"></i>
+                            </div>
+                        </div>
+                        <p class="text-2xl font-black text-white mt-2" id="admin-kpi-checkins">0</p>
+                        <p class="text-[11px] text-gray-400 mt-1">คนล่าสุด: <span id="admin-kpi-last-checkin" class="text-gymAccent">ไม่มี</span></p>
+                    </div>
+
+                    <div class="bg-gymCard p-5 rounded-2xl border border-gymBorder shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-gray-400">สมาชิกหมดอายุเร็วๆ นี้</span>
+                            <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            </div>
+                        </div>
+                        <p class="text-2xl font-black text-amber-400 mt-2" id="admin-kpi-expiring">0</p>
+                        <p class="text-[11px] text-gray-400 mt-1">ภายใน 7 วันทำการ</p>
+                    </div>
+                </div>
+
+                <!-- Charts & Recent Activity Row -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Revenue Chart -->
+                    <div class="lg:col-span-7 bg-gymCard p-5 rounded-2xl border border-gymBorder">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-white text-base">สถิติจำนวนคนเข้าใช้บริการ & รายได้</h3>
+                            <span class="text-xs text-gray-400">รายสัปดาห์</span>
+                        </div>
+                        <div class="h-64 relative">
+                            <canvas id="revenueChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Live Activity Log -->
+                    <div class="lg:col-span-5 bg-gymCard p-5 rounded-2xl border border-gymBorder flex flex-col">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-white text-base flex items-center">
+                                <i class="fa-solid fa-list-check text-gymBlue mr-2"></i> กิจกรรมล่าสุด
+                            </h3>
+                            <button onclick="clearActivityLogs()" class="text-xs text-gray-400 hover:text-white">ล้างบันทึก</button>
+                        </div>
+                        <div class="flex-1 space-y-3 overflow-y-auto max-h-64 pr-1" id="admin-activity-logs">
+                            <!-- Logs rendered by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN TAB 2: MEMBER MANAGEMENT -->
+            <div id="admin-tab-members" class="hidden space-y-6">
+                <!-- Title & Filter Toolbar -->
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gymBorder pb-4">
+                    <div>
+                        <h2 class="text-2xl font-black text-white">จัดการรายชื่อสมาชิก</h2>
+                        <p class="text-gray-400 text-xs sm:text-sm">ค้นหา ปรับปรุงข้อมูล ต่ออายุสมาชิก และดูบัตรสมาชิก</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="openAddMemberModal()" class="bg-gymBlue hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-neon-blue transition">
+                            <i class="fa-solid fa-user-plus mr-1"></i> เพิ่มสมาชิกใหม่
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search & Filters -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400 text-sm"></i>
+                        <input type="text" id="member-search-input" onkeyup="filterMembersTable()" placeholder="ค้นหาชื่อ, เบอร์โทร, หรือ ID..." class="w-full bg-gymCard border border-gymBorder rounded-xl pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-gymBlue">
+                    </div>
+                    <div>
+                        <select id="member-status-filter" onchange="filterMembersTable()" class="w-full bg-gymCard border border-gymBorder rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-gymBlue">
+                            <option value="ALL">สถานะทั้งหมด</option>
+                            <option value="ACTIVE">ใช้งานได้ (Active)</option>
+                            <option value="EXPIRING">ใกล้หมดอายุ (Expiring)</option>
+                            <option value="EXPIRED">หมดอายุแล้ว (Expired)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <select id="member-package-filter" onchange="filterMembersTable()" class="w-full bg-gymCard border border-gymBorder rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-gymBlue">
+                            <option value="ALL">แพ็กเกจทั้งหมด</option>
+                            <!-- Filter options added via JS -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Members Datatable -->
+                <div class="bg-gymCard rounded-2xl border border-gymBorder overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-gray-300">
+                            <thead class="bg-gymGray text-xs uppercase text-gray-400 border-b border-gymBorder">
+                                <tr>
+                                    <th class="px-4 py-3">รหัส / ชื่อสมาชิก</th>
+                                    <th class="px-4 py-3">เบอร์โทรศัพท์</th>
+                                    <th class="px-4 py-3">แพ็กเกจ</th>
+                                    <th class="px-4 py-3">วันหมดอายุ</th>
+                                    <th class="px-4 py-3">สถานะ</th>
+                                    <th class="px-4 py-3 text-right">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-members-tbody" class="divide-y divide-gymBorder/50">
+                                <!-- Members rows rendered by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN TAB 3: POS & SUPPLEMENT STORE -->
+            <div id="admin-tab-pos" class="hidden space-y-6">
+                <div class="border-b border-gymBorder pb-4">
+                    <h2 class="text-2xl font-black text-white">ระบบขายหน้าร้าน (POS & Supplement)</h2>
+                    <p class="text-gray-400 text-xs sm:text-sm">จำหน่ายเวย์โปรตีน เครื่องดื่ม อุปกรณ์ และต่ออายุแพ็กเกจทันที</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Products Grid -->
+                    <div class="lg:col-span-7 space-y-4">
+                        <h3 class="font-bold text-white text-base">รายการสินค้า & บริการ</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="pos-products-grid">
+                            <!-- Rendered by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Cart / Checkout Register -->
+                    <div class="lg:col-span-5 bg-gymCard p-5 rounded-2xl border border-gymBorder flex flex-col h-full">
+                        <h3 class="font-bold text-white text-base mb-4 border-b border-gymBorder pb-3 flex items-center justify-between">
+                            <span><i class="fa-solid fa-cart-shopping text-gymBlue mr-2"></i> ตะกร้าสินค้า</span>
+                            <button onclick="clearPosCart()" class="text-xs text-red-400 hover:text-red-300">ล้างตะกร้า</button>
+                        </h3>
+
+                        <!-- Cart Items List -->
+                        <div class="flex-1 space-y-3 overflow-y-auto min-h-[200px] max-h-[300px] pr-1" id="pos-cart-items">
+                            <p class="text-xs text-gray-500 text-center py-8">ยังไม่มีสินค้าในตะกร้า</p>
+                        </div>
+
+                        <!-- Summary & Checkout Button -->
+                        <div class="border-t border-gymBorder pt-4 mt-4 space-y-3">
+                            <div class="flex justify-between text-sm text-gray-400">
+                                <span>รวมเงินทั้งสิ้น:</span>
+                                <span class="text-xl font-black text-gymAccent" id="pos-cart-total">฿0</span>
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-xs text-gray-400">เลือกสมาชิก (ถ้ามี):</label>
+                                <select id="pos-member-select" class="w-full bg-gymDark border border-gymBorder rounded-xl px-3 py-2 text-xs text-white focus:outline-none">
+                                    <option value="">-- สมาชิกทั่วไป / ไม่ระบุ --</option>
+                                </select>
+                            </div>
+
+                            <button onclick="processPosCheckout()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold shadow-lg transition flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-check-circle"></i>
+                                <span>ชำระเงิน / บันทึกการขาย</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN TAB 4: PACKAGES MANAGER -->
+            <div id="admin-tab-packages" class="hidden space-y-6">
+                <div class="flex items-center justify-between border-b border-gymBorder pb-4">
+                    <div>
+                        <h2 class="text-2xl font-black text-white">จัดการแพ็กเกจยิม</h2>
+                        <p class="text-gray-400 text-xs sm:text-sm">กำหนดราคาและระยะเวลาของสมาชิกยิม</p>
+                    </div>
+                    <button onclick="openAddPackageModal()" class="bg-gymBlue hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold">
+                        <i class="fa-solid fa-plus mr-1"></i> เพิ่มแพ็กเกจใหม่
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="admin-packages-grid">
+                    <!-- Rendered by JS -->
+                </div>
+            </div>
+
+            <!-- ADMIN TAB 5: CLASSES MANAGER -->
+            <div id="admin-tab-classes" class="hidden space-y-6">
+                <div class="flex items-center justify-between border-b border-gymBorder pb-4">
+                    <div>
+                        <h2 class="text-2xl font-black text-white">ตารางคลาสออกกำลังกาย</h2>
+                        <p class="text-gray-400 text-xs sm:text-sm">สร้างและแก้ไขคลาส ฟิตเนส และการจองของสมาชิก</p>
+                    </div>
+                    <button onclick="openAddClassModal()" class="bg-gymBlue hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold">
+                        <i class="fa-solid fa-plus mr-1"></i> เพิ่มคลาสใหม่
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="admin-classes-grid">
+                    <!-- Rendered by JS -->
+                </div>
+            </div>
+
+            <!-- ADMIN TAB 6: LOCKERS GRID -->
+            <div id="admin-tab-lockers" class="hidden space-y-6">
+                <div class="border-b border-gymBorder pb-4">
+                    <h2 class="text-2xl font-black text-white">ระบบจัดการตู้ล็อกเกอร์</h2>
+                    <p class="text-gray-400 text-xs sm:text-sm">ตรวจสอบสถานะตู้ว่าง และมอบหมายตู้ให้กับสมาชิก</p>
+                </div>
+
+                <!-- Locker Legend -->
+                <div class="flex items-center space-x-6 text-xs text-gray-300 bg-gymCard p-3 rounded-xl border border-gymBorder">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                        <span>ตู้ว่าง (Available)</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="w-3 h-3 rounded-full bg-red-500"></span>
+                        <span>กำลังใช้งาน (Occupied)</span>
+                    </div>
+                </div>
+
+                <!-- Lockers Visual Grid -->
+                <div class="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-10 gap-3" id="admin-lockers-grid">
+                    <!-- Rendered by JS -->
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- MODAL 1: ADD / EDIT MEMBER -->
+    <div id="modal-member" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-gymCard border border-gymBorder rounded-2xl max-w-md w-full p-6 space-y-4 shadow-neon-blue relative">
+            <button onclick="closeModal('modal-member')" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h3 class="text-xl font-bold text-white border-b border-gymBorder pb-2" id="modal-member-title">เพิ่มสมาชิกใหม่</h3>
+
+            <form id="member-form" onsubmit="handleSaveMember(event)" class="space-y-3 text-sm">
+                <input type="hidden" id="member-form-id">
+
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">ชื่อ - นามสกุล *</label>
+                    <input type="text" id="member-form-name" required placeholder="นาย สมชาย สายยก" class="w-full bg-gymDark border border-gymBorder rounded-xl px-3 py-2 text-white focus:outline-none focus:border-gymBlue">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">เบอร์โทรศัพท์ *</label>
+                    <input type="tel" id="member-form-phone" required placeholder="0812345678" class="w-full bg-gymDark border border-gymBorder rounded-xl px-3 py-2 text-white focus:outline-none focus:border-gymBlue">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">เลือกแพ็กเกจสมาชิก *</label>
+                    <select id="member-form-package" required class="w-full bg-gymDark border border-gymBorder rounded-xl px-3 py-2 text-white focus:outline-none focus:border-gymBlue">
+                        <!-- Populated via JS -->
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">วันที่เริ่ม</label>
+                        <input type="date" id="member-form-start" required class="w-full bg-gymDark border border-gymBorder rounded-xl px-3 py-2 text-white focus:outline-none focus:border-gymBlue">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">มอบหมายล็อกเกอร์</label>
+                        <select id="member-form-locker" class="w-full bg-gymDark border border-gymBorder rounded-xl px-3 py-2 text-white focus:outline-none focus:border-gymBlue">
+                            <option value="">-- ไม่ใช้ล็อกเกอร์ --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="w-full bg-gymBlue hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl transition shadow-neon-blue">
+                        บันทึกข้อมูลสมาชิก
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: MEMBER PASS & QR CODE DISPLAY -->
+    <div id="modal-qr" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-gymCard border border-gymBlue/50 rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-neon-glow relative">
+            <button onclick="closeModal('modal-qr')" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <div class="inline-block px-3 py-1 rounded-full bg-gymBlue/20 text-gymAccent border border-gymBlue/30 text-xs font-semibold">
+                FAT UNFUNNY GYM PASS
+            </div>
+            <h3 class="text-lg font-bold text-white" id="qr-modal-name">นาย สมชาย สายยก</h3>
+            <p class="text-xs text-gray-400" id="qr-modal-id">ID: FUG-1001</p>
+
+            <!-- QR Code Box -->
+            <div class="bg-white p-4 rounded-xl inline-block shadow-md mx-auto" id="qrcode-container"></div>
+
+            <div class="bg-gymDark p-3 rounded-xl text-xs space-y-1 text-left border border-gymBorder">
+                <p class="text-gray-400">แพ็กเกจ: <span id="qr-modal-package" class="text-white font-medium">-</span></p>
+                <p class="text-gray-400">วันหมดอายุ: <span id="qr-modal-expiry" class="text-emerald-400 font-medium">-</span></p>
+                <p class="text-gray-400">ล็อกเกอร์ประจำ: <span id="qr-modal-locker" class="text-gymAccent font-medium">-</span></p>
+            </div>
+
+            <button onclick="triggerQuickCheckInFromQR()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-xl text-sm transition">
+                <i class="fa-solid fa-qrcode mr-1"></i> ลองเช็คอินด้วยบัตรนี้
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL 3: CHECK-IN KIOSK / SEARCH MEMBER -->
+    <div id="modal-checkin" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-gymCard border border-gymBorder rounded-2xl max-w-md w-full p-6 space-y-4 shadow-neon-blue relative">
+            <button onclick="closeModal('modal-checkin')" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h3 class="text-xl font-bold text-white border-b border-gymBorder pb-2 text-center">
+                <i class="fa-solid fa-qrcode text-gymBlue mr-2"></i> คีออสเช็คอินเข้ายิม
+            </h3>
+
+            <div class="space-y-3">
+                <p class="text-xs text-gray-400 text-center">กรอกรหัสสมาชิก (เช่น FUG-1001) หรือเบอร์โทรศัพท์เพื่อเข้าใช้งาน</p>
+                <input type="text" id="checkin-search-input" placeholder="พิมพ์ FUG-1001 หรือ 0812345678..." class="w-full bg-gymDark border border-gymBorder rounded-xl px-4 py-3 text-center text-lg font-mono text-gymAccent focus:outline-none focus:border-gymBlue">
+
+                <button onclick="processKioskCheckIn()" class="w-full bg-gymBlue hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-neon-blue">
+                    ยืนยันเช็คอิน
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // APP STATE & LOCAL STORAGE DATABASE
+        const DB_KEY = 'FAT_UNFUNNY_GYM_DB_V1';
+
+        // Initial Seed Data
+        const defaultData = {
+            members: [
+                { id: 'FUG-1001', name: 'สมชาย สายยก', phone: '0812345678', packageId: 'pkg-1m', startDate: '2026-02-01', expiryDate: '2026-08-31', status: 'ACTIVE', locker: 'L-05' },
+                { id: 'FUG-1002', name: 'วิชัย กล้ามโต', phone: '0898765432', packageId: 'pkg-3m', startDate: '2026-01-10', expiryDate: '2026-09-10', status: 'ACTIVE', locker: 'L-12' },
+                { id: 'FUG-1003', name: 'ณิชา สายเฮลตี้', phone: '0861112233', packageId: 'pkg-1y', startDate: '2025-09-01', expiryDate: '2026-08-20', status: 'EXPIRING', locker: null },
+                { id: 'FUG-1004', name: 'กิตติศักดิ์ พาวเวอร์', phone: '0829998877', packageId: 'pkg-day', startDate: '2026-08-10', expiryDate: '2026-08-11', status: 'EXPIRED', locker: null }
+            ],
+            packages: [
+                { id: 'pkg-day', name: 'รายวัน (Daily Pass)', price: 150, days: 1, desc: 'เล่นได้ทุกโซนตลอดวัน + น้ำดื่ม 1 ขวด' },
+                { id: 'pkg-1m', name: 'รายเดือน (1 Month)', price: 1200, days: 30, desc: 'เข้าเล่น 24 ชั่วโมง ฟรีคลาสประจำสัปดาห์' },
+                { id: 'pkg-3m', name: '3 เดือน (Prolifter)', price: 3200, days: 90, desc: 'ประหยัดเพิ่มขึ้น ฟรีล็อกเกอร์ประจำตู้' },
+                { id: 'pkg-1y', name: 'รายปี (VIP Ultra)', price: 9900, days: 365, desc: 'สิทธิ์เข้าใช้บริการ VIP ฟรีเวย์โปรตีน 2 กระปุก' }
+            ],
+            products: [
+                { id: 'prod-whey', name: 'เวย์โปรตีน สกู๊ป', price: 60, icon: 'fa-glass-water' },
+                { id: 'prod-creatine', name: 'ครีเอทีน (Creatine)', price: 40, icon: 'fa-vial' },
+                { id: 'prod-water', name: 'น้ำดื่มเย็น 1.5L', price: 20, icon: 'fa-bottle-water' },
+                { id: 'prod-straps', name: 'สายรัดข้อมือ Lifting Straps', price: 250, icon: 'fa-hands' },
+                { id: 'prod-towel', name: 'ผ้าขนหนูเช็ดเหงื่อ Gym', price: 120, icon: 'fa-mattress-pillow' }
+            ],
+            classes: [
+                { id: 'cls-1', name: 'Heavy Duty Powerlifting', time: '17:00 - 18:30', trainer: 'โค้ชเบิ้ม', capacity: 10, enrolled: 7 },
+                { id: 'cls-2', name: 'Fat Burn HIIT Cardio', time: '18:30 - 19:30', trainer: 'โค้ชฟ้า', capacity: 15, enrolled: 12 },
+                { id: 'cls-3', name: 'Dumbbell Mastery & Form', time: '20:00 - 21:00', trainer: 'โค้ชก้อง', capacity: 8, enrolled: 5 }
+            ],
+            trainers: [
+                { name: 'โค้ชเบิ้ม (Head Coach)', spec: 'Powerlifting / Hypertrophy', img: 'https://images.unsplash.com/photo-1567013127542-490d757e51fc?auto=format&fit=crop&w=200&q=80' },
+                { name: 'โค้ชฟ้า (Fitness Specialist)', spec: 'Weight Loss / Functional Training', img: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=200&q=80' }
+            ],
+            checkins: [
+                { memberId: 'FUG-1001', memberName: 'สมชาย สายยก', timestamp: new Date().toLocaleTimeString('th-TH') }
+            ],
+            logs: [
+                { text: 'ระบบเริ่มต้นทำงานเรียบร้อยแล้ว', time: new Date().toLocaleTimeString('th-TH') }
+            ],
+            revenue: 14450,
+            posCart: []
+        };
+
+        let appData = loadData();
+
+        function loadData() {
+            const saved = localStorage.getItem(DB_KEY);
+            return saved ? JSON.parse(saved) : defaultData;
+        }
+
+        function saveData() {
+            localStorage.setItem(DB_KEY, JSON.stringify(appData));
+        }
+
+        // SWITCH BETWEEN PUBLIC LANDING PAGE AND ADMIN SYSTEM
+        function switchView(viewName) {
+            const publicView = document.getElementById('public-view');
+            const adminView = document.getElementById('admin-view');
+            const btnPublic = document.getElementById('btn-view-public');
+            const btnAdmin = document.getElementById('btn-view-admin');
+
+            if (viewName === 'admin') {
+                publicView.classList.add('hidden');
+                adminView.classList.remove('hidden');
+                btnAdmin.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-gymBlue text-white shadow-neon-blue";
+                btnPublic.className = "px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition";
+                renderAdminDashboard();
+            } else {
+                adminView.classList.add('hidden');
+                publicView.classList.remove('hidden');
+                btnPublic.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-gymBlue text-white shadow-neon-blue";
+                btnAdmin.className = "px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition";
+                renderPublicPage();
+            }
+        }
+
+        // SWITCH ADMIN TAB PANELS
+        function switchAdminTab(tabName) {
+            const tabs = ['dashboard', 'members', 'pos', 'packages', 'classes', 'lockers'];
+            tabs.forEach(t => {
+                const panel = document.getElementById(`admin-tab-${t}`);
+                const btn = document.getElementById(`tab-btn-${t}`);
+                if (panel) panel.classList.add('hidden');
+                if (btn) btn.classList.remove('active-tab');
+            });
+
+            const targetPanel = document.getElementById(`admin-tab-${tabName}`);
+            const targetBtn = document.getElementById(`tab-btn-${tabName}`);
+            if (targetPanel) targetPanel.classList.remove('hidden');
+            if (targetBtn) targetBtn.classList.add('active-tab');
+
+            // Tab specific refreshes
+            if (tabName === 'members') renderMembersTable();
+            if (tabName === 'pos') renderPosProducts();
+            if (tabName === 'packages') renderAdminPackages();
+            if (tabName === 'classes') renderAdminClasses();
+            if (tabName === 'lockers') renderAdminLockers();
+        }
+
+        function renderPublicPage() {
+            // Packages Grid
+            const pkgGrid = document.getElementById('public-packages-grid');
+            if (pkgGrid) {
+                pkgGrid.innerHTML = appData.packages.map(pkg => `
+                    <div class="glass-panel p-6 rounded-2xl flex flex-col justify-between border border-gymBorder hover:border-gymBlue transition transform hover:-translate-y-1">
+                        <div>
+                            <h3 class="text-xl font-bold text-white mb-2">${pkg.name}</h3>
+                            <div class="flex items-baseline mb-4">
+                                <span class="text-3xl font-black text-gymAccent">฿${pkg.price.toLocaleString()}</span>
+                                <span class="text-xs text-gray-400 ml-1">/ ${pkg.days} วัน</span>
+                            </div>
+                            <p class="text-xs text-gray-300 leading-relaxed mb-6">${pkg.desc}</p>
+                        </div>
+                        <button onclick="openAddMemberModalWithPkg('${pkg.id}')" class="w-full bg-gymBlue hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-sm transition shadow-neon-blue">
+                            สมัครแพ็กเกจนี้
+                        </button>
+                    </div>
+                `).join('');
+            }
+
+            // Public Classes
+            const classList = document.getElementById('public-classes-list');
+            if (classList) {
+                classList.innerHTML = appData.classes.map(c => `
+                    <div class="bg-gymDark/70 p-3.5 rounded-xl border border-gymBorder flex items-center justify-between">
+                        <div>
+                            <h4 class="font-bold text-sm text-white">${c.name}</h4>
+                            <p class="text-xs text-gray-400"><i class="fa-regular fa-clock text-gymBlue mr-1"></i> ${c.time} | โดย ${c.trainer}</p>
+                        </div>
+                        <span class="text-xs bg-gymCard px-2.5 py-1 rounded-lg border border-gymBorder text-gymAccent font-mono">
+                            ${c.enrolled}/${c.capacity} คน
+                        </span>
+                    </div>
+                `).join('');
+            }
+
+            // Public Trainers
+            const trainerList = document.getElementById('public-trainers-list');
+            if (trainerList) {
+                trainerList.innerHTML = appData.trainers.map(t => `
+                    <div class="flex items-center space-x-3 bg-gymDark/70 p-3 rounded-xl border border-gymBorder">
+                        <img src="${t.img}" class="w-12 h-12 rounded-lg object-cover border border-gymBlue">
+                        <div>
+                            <h4 class="font-bold text-xs text-white">${t.name}</h4>
+                            <p class="text-[11px] text-gray-400">${t.spec}</p>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function renderAdminDashboard() {
+            document.getElementById('admin-kpi-total-members').innerText = appData.members.length;
+            const activeCount = appData.members.filter(m => m.status === 'ACTIVE' || m.status === 'EXPIRING').length;
+            document.getElementById('admin-kpi-active-members').innerText = activeCount;
+            document.getElementById('admin-kpi-revenue').innerText = `฿${appData.revenue.toLocaleString()}`;
+            document.getElementById('admin-kpi-checkins').innerText = appData.checkins.length;
+
+            const lastCheckin = appData.checkins[appData.checkins.length - 1];
+            document.getElementById('admin-kpi-last-checkin').innerText = lastCheckin ? lastCheckin.memberName : 'ไม่มี';
+
+            const expiringCount = appData.members.filter(m => m.status === 'EXPIRING').length;
+            document.getElementById('admin-kpi-expiring').innerText = expiringCount;
+
+            // Render Logs
+            const logsBox = document.getElementById('admin-activity-logs');
+            if (logsBox) {
+                logsBox.innerHTML = appData.logs.map(log => `
+                    <div class="text-xs p-2.5 rounded-lg bg-gymDark/60 border border-gymBorder flex justify-between items-center">
+                        <span class="text-gray-300"><i class="fa-solid fa-angle-right text-gymBlue mr-1"></i> ${log.text}</span>
+                        <span class="text-[10px] text-gray-500 font-mono">${log.time}</span>
+                    </div>
+                `).join('');
+            }
+
+            renderRevenueChart();
+        }
+
+        let revenueChartInstance = null;
+        function renderRevenueChart() {
+            const ctx = document.getElementById('revenueChart');
+            if (!ctx) return;
+
+            if (revenueChartInstance) {
+                revenueChartInstance.destroy();
+            }
+
+            revenueChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'อาทิตย์'],
+                    datasets: [
+                        {
+                            label: 'การเช็คอิน (คน)',
+                            data: [12, 19, 15, 25, 22, 30, 28],
+                            borderColor: '#00E5FF',
+                            backgroundColor: 'rgba(0, 229, 255, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'รายได้ (พันบาท)',
+                            data: [2.5, 3.1, 1.8, 4.2, 3.8, 5.5, 4.9],
+                            borderColor: '#1651C7',
+                            backgroundColor: 'rgba(22, 81, 199, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#9CA3AF', font: { family: 'Prompt' } } }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#9CA3AF' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { ticks: { color: '#9CA3AF' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                    }
+                }
+            });
+        }
+
+        function renderMembersTable() {
+            const tbody = document.getElementById('admin-members-tbody');
+            if (!tbody) return;
+
+            // Populate package filter
+            const pkgSelect = document.getElementById('member-package-filter');
+            if (pkgSelect) {
+                pkgSelect.innerHTML = '<option value="ALL">แพ็กเกจทั้งหมด</option>' +
+                    appData.packages.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+            }
+
+            filterMembersTable();
+        }
+
+        function filterMembersTable() {
+            const search = document.getElementById('member-search-input').value.toLowerCase();
+            const statusFilter = document.getElementById('member-status-filter').value;
+            const packageFilter = document.getElementById('member-package-filter').value;
+
+            const filtered = appData.members.filter(m => {
+                const matchesSearch = m.name.toLowerCase().includes(search) || m.phone.includes(search) || m.id.toLowerCase().includes(search);
+                const matchesStatus = statusFilter === 'ALL' || m.status === statusFilter;
+                const matchesPkg = packageFilter === 'ALL' || m.packageId === packageFilter;
+                return matchesSearch && matchesStatus && matchesPkg;
+            });
+
+            const tbody = document.getElementById('admin-members-tbody');
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-gray-500">ไม่พบข้อมูลสมาชิกตามเงื่อนไข</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(m => {
+                const pkg = appData.packages.find(p => p.id === m.packageId) || { name: 'N/A' };
+                let badgeClass = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+                if (m.status === 'EXPIRING') badgeClass = 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+                if (m.status === 'EXPIRED') badgeClass = 'bg-red-500/10 text-red-400 border-red-500/20';
+
+                return `
+                    <tr class="hover:bg-gymCardHover/50 transition">
+                        <td class="px-4 py-3">
+                            <div class="font-bold text-white">${m.name}</div>
+                            <div class="text-[11px] text-gymBlue font-mono">${m.id}</div>
+                        </td>
+                        <td class="px-4 py-3 font-mono text-xs">${m.phone}</td>
+                        <td class="px-4 py-3">${pkg.name}</td>
+                        <td class="px-4 py-3 font-mono text-xs">${m.expiryDate}</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${badgeClass}">
+                                ${m.status}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-right space-x-1">
+                            <button onclick="openQrModal('${m.id}')" title="ดูบัตร QR" class="p-1.5 bg-gymDark hover:bg-gymBlue text-gymAccent hover:text-white rounded-lg border border-gymBorder transition">
+                                <i class="fa-solid fa-qrcode text-xs"></i>
+                            </button>
+                            <button onclick="editMember('${m.id}')" title="แก้ไข" class="p-1.5 bg-gymDark hover:bg-gymBlue text-gray-300 hover:text-white rounded-lg border border-gymBorder transition">
+                                <i class="fa-solid fa-pen text-xs"></i>
+                            </button>
+                            <button onclick="deleteMember('${m.id}')" title="ลบ" class="p-1.5 bg-gymDark hover:bg-red-600 text-gray-300 hover:text-white rounded-lg border border-gymBorder transition">
+                                <i class="fa-solid fa-trash text-xs"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderPosProducts() {
+            const grid = document.getElementById('pos-products-grid');
+            if (!grid) return;
+
+            grid.innerHTML = appData.products.map(p => `
+                <div onclick="addPosToCart('${p.id}')" class="bg-gymCard p-3 rounded-xl border border-gymBorder hover:border-gymBlue cursor-pointer transition flex flex-col items-center text-center group">
+                    <div class="w-10 h-10 rounded-full bg-gymDark text-gymBlue flex items-center justify-center mb-2 group-hover:scale-110 transition">
+                        <i class="fa-solid ${p.icon} text-lg"></i>
+                    </div>
+                    <h4 class="font-bold text-xs text-white mb-1">${p.name}</h4>
+                    <span class="text-xs font-black text-gymAccent">฿${p.price}</span>
+                </div>
+            `).join('');
+
+            // Populate Member Select in POS
+            const select = document.getElementById('pos-member-select');
+            if (select) {
+                select.innerHTML = '<option value="">-- สมาชิกทั่วไป / ไม่ระบุ --</option>' +
+                    appData.members.map(m => `<option value="${m.id}">${m.name} (${m.id})</option>`).join('');
+            }
+
+            renderPosCart();
+        }
+
+        function addPosToCart(productId) {
+            const prod = appData.products.find(p => p.id === productId);
+            if (!prod) return;
+
+            const existing = appData.posCart.find(item => item.id === productId);
+            if (existing) {
+                existing.qty++;
+            } else {
+                appData.posCart.push({ ...prod, qty: 1 });
+            }
+            renderPosCart();
+        }
+
+        function renderPosCart() {
+            const cartContainer = document.getElementById('pos-cart-items');
+            if (!cartContainer) return;
+
+            if (appData.posCart.length === 0) {
+                cartContainer.innerHTML = `<p class="text-xs text-gray-500 text-center py-8">ยังไม่มีสินค้าในตะกร้า</p>`;
+                document.getElementById('pos-cart-total').innerText = '฿0';
+                return;
+            }
+
+            let total = 0;
+            cartContainer.innerHTML = appData.posCart.map(item => {
+                const subtotal = item.price * item.qty;
+                total += subtotal;
+                return `
+                    <div class="flex items-center justify-between p-2 bg-gymDark rounded-lg border border-gymBorder text-xs">
+                        <div>
+                            <p class="font-bold text-white">${item.name}</p>
+                            <p class="text-gray-400">฿${item.price} x ${item.qty}</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="font-black text-gymAccent">฿${subtotal}</span>
+                            <button onclick="removePosCartItem('${item.id}')" class="text-red-400 hover:text-red-300">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('pos-cart-total').innerText = `฿${total.toLocaleString()}`;
+        }
+
+        function removePosCartItem(id) {
+            appData.posCart = appData.posCart.filter(i => i.id !== id);
+            renderPosCart();
+        }
+
+        function clearPosCart() {
+            appData.posCart = [];
+            renderPosCart();
+        }
+
+        function processPosCheckout() {
+            if (appData.posCart.length === 0) {
+                showToast('โปรดเลือกสินค้าลงตะกร้าก่อน', 'warning');
+                return;
+            }
+
+            const total = appData.posCart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            appData.revenue += total;
+
+            const memberSelect = document.getElementById('pos-member-select');
+            const memberName = memberSelect.options[memberSelect.selectedIndex].text;
+
+            logActivity(`ขายสินค้าหน้าร้าน ยอดเงิน ฿${total} (${memberName})`);
+            appData.posCart = [];
+            saveData();
+            renderPosCart();
+            renderAdminDashboard();
+            showToast('บันทึกการขายเรียบร้อยแล้ว!', 'success');
+        }
+
+        function renderAdminPackages() {
+            const grid = document.getElementById('admin-packages-grid');
+            if (!grid) return;
+
+            grid.innerHTML = appData.packages.map(p => `
+                <div class="bg-gymCard p-5 rounded-2xl border border-gymBorder flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="font-bold text-lg text-white">${p.name}</h3>
+                            <span class="text-xs bg-gymBlue/20 text-gymAccent px-2 py-0.5 rounded font-mono">${p.days} วัน</span>
+                        </div>
+                        <p class="text-2xl font-black text-white mb-3">฿${p.price.toLocaleString()}</p>
+                        <p class="text-xs text-gray-400 mb-4">${p.desc}</p>
+                    </div>
+                    <button onclick="deletePackage('${p.id}')" class="w-full bg-gymDark hover:bg-red-600 text-xs text-gray-300 hover:text-white py-2 rounded-xl transition border border-gymBorder">
+                        ลบแพ็กเกจ
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function renderAdminClasses() {
+            const grid = document.getElementById('admin-classes-grid');
+            if (!grid) return;
+
+            grid.innerHTML = appData.classes.map(c => `
+                <div class="bg-gymCard p-5 rounded-2xl border border-gymBorder space-y-3">
+                    <div class="flex justify-between items-start">
+                        <h3 class="font-bold text-white text-base">${c.name}</h3>
+                        <span class="text-xs font-mono bg-gymDark px-2 py-1 rounded text-gymAccent">${c.time}</span>
+                    </div>
+                    <p class="text-xs text-gray-400"><i class="fa-solid fa-user-ninja text-gymBlue mr-1"></i> ผู้สอน: ${c.trainer}</p>
+                    <div class="flex justify-between items-center text-xs text-gray-300">
+                        <span>จำนวนผู้เข้าร่วม:</span>
+                        <span class="font-bold text-white">${c.enrolled} / ${c.capacity} คน</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderAdminLockers() {
+            const grid = document.getElementById('admin-lockers-grid');
+            if (!grid) return;
+
+            let lockersHTML = '';
+            for (let i = 1; i <= 30; i++) {
+                const lockerNum = `L-${i < 10 ? '0' + i : i}`;
+                const assignedMember = appData.members.find(m => m.locker === lockerNum);
+                const isOccupied = !!assignedMember;
+
+                lockersHTML += `
+                    <div class="p-3 rounded-xl border text-center flex flex-col justify-between ${isOccupied ? 'bg-red-500/10 border-red-500/30' : 'bg-emerald-500/10 border-emerald-500/30'}">
+                        <span class="font-mono font-bold text-xs ${isOccupied ? 'text-red-400' : 'text-emerald-400'}">${lockerNum}</span>
+                        <span class="text-[10px] text-gray-400 truncate mt-1">${isOccupied ? assignedMember.name : 'ว่าง'}</span>
+                    </div>
+                `;
+            }
+            grid.innerHTML = lockersHTML;
+        }
+
+        function openAddMemberModal() {
+            document.getElementById('modal-member-title').innerText = 'เพิ่มสมาชิกใหม่';
+            document.getElementById('member-form-id').value = '';
+            document.getElementById('member-form-name').value = '';
+            document.getElementById('member-form-phone').value = '';
+            document.getElementById('member-form-start').valueAsDate = new Date();
+
+            // Populate packages
+            const pkgSelect = document.getElementById('member-form-package');
+            pkgSelect.innerHTML = appData.packages.map(p => `<option value="${p.id}">${p.name} (฿${p.price})</option>`).join('');
+
+            // Populate lockers
+            const lockerSelect = document.getElementById('member-form-locker');
+            let lockersHTML = '<option value="">-- ไม่ใช้ล็อกเกอร์ --</option>';
+            for (let i = 1; i <= 30; i++) {
+                const lockerNum = `L-${i < 10 ? '0' + i : i}`;
+                const isOccupied = appData.members.some(m => m.locker === lockerNum);
+                if (!isOccupied) {
+                    lockersHTML += `<option value="${lockerNum}">${lockerNum}</option>`;
+                }
+            }
+            lockerSelect.innerHTML = lockersHTML;
+
+            openModal('modal-member');
+        }
+
+        function openAddMemberModalWithPkg(pkgId) {
+            openAddMemberModal();
+            document.getElementById('member-form-package').value = pkgId;
+        }
+
+        function handleSaveMember(e) {
+            e.preventDefault();
+            const id = document.getElementById('member-form-id').value;
+            const name = document.getElementById('member-form-name').value;
+            const phone = document.getElementById('member-form-phone').value;
+            const pkgId = document.getElementById('member-form-package').value;
+            const startDateStr = document.getElementById('member-form-start').value;
+            const locker = document.getElementById('member-form-locker').value || null;
+
+            const pkg = appData.packages.find(p => p.id === pkgId);
+            const startDate = new Date(startDateStr);
+            const expiryDate = new Date(startDate);
+            expiryDate.setDate(expiryDate.getDate() + (pkg ? pkg.days : 30));
+
+            const expiryStr = expiryDate.toISOString().split('T')[0];
+
+            if (id) {
+                // Edit existing
+                const index = appData.members.findIndex(m => m.id === id);
+                if (index !== -1) {
+                    appData.members[index] = { ...appData.members[index], name, phone, packageId: pkgId, startDate: startDateStr, expiryDate: expiryStr, locker };
+                    logActivity(`แก้ไขข้อมูลสมาชิก ${name} (${id})`);
+                }
+            } else {
+                // Create new
+                const newId = `FUG-${1000 + appData.members.length + 1}`;
+                appData.members.push({ id: newId, name, phone, packageId: pkgId, startDate: startDateStr, expiryDate: expiryStr, status: 'ACTIVE', locker });
+                appData.revenue += (pkg ? pkg.price : 0);
+                logActivity(`เพิ่มสมาชิกใหม่ ${name} (${newId}) ยอดเงิน ฿${pkg ? pkg.price : 0}`);
+            }
+
+            saveData();
+            closeModal('modal-member');
+            renderAdminDashboard();
+            renderMembersTable();
+            showToast('บันทึกข้อมูลสมาชิกสำเร็จ!', 'success');
+        }
+
+        function editMember(id) {
+            const member = appData.members.find(m => m.id === id);
+            if (!member) return;
+
+            openAddMemberModal();
+            document.getElementById('modal-member-title').innerText = 'แก้ไขข้อมูลสมาชิก';
+            document.getElementById('member-form-id').value = member.id;
+            document.getElementById('member-form-name').value = member.name;
+            document.getElementById('member-form-phone').value = member.phone;
+            document.getElementById('member-form-package').value = member.packageId;
+            document.getElementById('member-form-start').value = member.startDate;
+        }
+
+        function deleteMember(id) {
+            const member = appData.members.find(m => m.id === id);
+            if (!member) return;
+
+            appData.members = appData.members.filter(m => m.id !== id);
+            logActivity(`ลบสมาชิก ${member.name} (${id})`);
+            saveData();
+            renderMembersTable();
+            renderAdminDashboard();
+            showToast('ลบสมาชิกเรียบร้อยแล้ว', 'info');
+        }
+
+        function openQrModal(id) {
+            const member = appData.members.find(m => m.id === id);
+            if (!member) return;
+
+            document.getElementById('qr-modal-name').innerText = member.name;
+            document.getElementById('qr-modal-id').innerText = `ID: ${member.id}`;
+            
+            const pkg = appData.packages.find(p => p.id === member.packageId);
+            document.getElementById('qr-modal-package').innerText = pkg ? pkg.name : '-';
+            document.getElementById('qr-modal-expiry').innerText = member.expiryDate;
+            document.getElementById('qr-modal-locker').innerText = member.locker || 'ไม่มี';
+
+            // Generate QR Code
+            const qrContainer = document.getElementById('qrcode-container');
+            qrContainer.innerHTML = '';
+            new QRCode(qrContainer, {
+                text: member.id,
+                width: 140,
+                height: 140,
+                colorDark: '#08080C',
+                colorLight: '#FFFFFF',
+            });
+
+            openModal('modal-qr');
+        }
+
+        function openMemberSearchModal() {
+            openModal('modal-checkin');
+        }
+
+        function openCheckInModal() {
+            openModal('modal-checkin');
+        }
+
+        function processKioskCheckIn() {
+            const input = document.getElementById('checkin-search-input').value.trim();
+            if (!input) {
+                showToast('กรุณากรอกรหัสสมาชิกหรือเบอร์โทร', 'warning');
+                return;
+            }
+
+            const member = appData.members.find(m => m.id.toLowerCase() === input.toLowerCase() || m.phone === input);
+            if (!member) {
+                showToast('ไม่พบข้อมูลสมาชิกในระบบ', 'error');
+                return;
+            }
+
+            if (member.status === 'EXPIRED') {
+                showToast(`สมาชิก ${member.name} หมดอายุแล้ว โปรดติดต่อแอดมินเพื่อต่ออายุ`, 'error');
+                return;
+            }
+
+            // Record Check-in
+            appData.checkins.push({
+                memberId: member.id,
+                memberName: member.name,
+                timestamp: new Date().toLocaleTimeString('th-TH')
+            });
+
+            logActivity(`เช็คอินเข้ายิม: ${member.name} (${member.id})`);
+            saveData();
+            closeModal('modal-checkin');
+            renderAdminDashboard();
+            showToast(`เช็คอินสำเร็จ! ยินดีต้อนรับคุณ ${member.name}`, 'success');
+        }
+
+        function triggerQuickCheckInFromQR() {
+            closeModal('modal-qr');
+            showToast('เช็คอินผ่านบัตร QR เรียบร้อยแล้ว!', 'success');
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function logActivity(text) {
+            appData.logs.unshift({ text, time: new Date().toLocaleTimeString('th-TH') });
+            if (appData.logs.length > 20) appData.logs.pop();
+        }
+
+        function clearActivityLogs() {
+            appData.logs = [];
+            saveData();
+            renderAdminDashboard();
+        }
+
+        function scrollToPricing() {
+            document.getElementById('pricing-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            let bg = 'bg-gymCard border-gymBlue text-white';
+            let icon = 'fa-circle-info text-gymBlue';
+            if (type === 'success') {
+                bg = 'bg-emerald-950/90 border-emerald-500 text-emerald-200';
+                icon = 'fa-circle-check text-emerald-400';
+            } else if (type === 'warning') {
+                bg = 'bg-amber-950/90 border-amber-500 text-amber-200';
+                icon = 'fa-triangle-exclamation text-amber-400';
+            } else if (type === 'error') {
+                bg = 'bg-red-950/90 border-red-500 text-red-200';
+                icon = 'fa-circle-xmark text-red-400';
+            }
+
+            toast.className = `pointer-events-auto flex items-center space-x-3 px-4 py-3 rounded-xl border shadow-xl text-xs sm:text-sm font-medium transition transform translate-y-2 opacity-0 ${bg}`;
+            toast.innerHTML = `<i class="fa-solid ${icon} text-base"></i> <span>${message}</span>`;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Live Clock Tick
+        setInterval(() => {
+            const clock = document.getElementById('live-time-clock');
+            if (clock) clock.innerText = new Date().toLocaleTimeString('th-TH');
+        }, 1000);
+
+        // App Initializer
+        window.onload = function() {
+            renderPublicPage();
+            renderAdminDashboard();
+        }
+    </script>
+</body>
+</html>
